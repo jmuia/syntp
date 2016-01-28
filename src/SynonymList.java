@@ -24,6 +24,10 @@ public class SynonymList {
         instance.synonyms.put(b, bSynonyms);
     }
 
+    public static synchronized boolean exists(String word) {
+        return instance.synonyms.containsKey(word);
+    }
+
     public static synchronized void removeSynonym(String word) {
         HashSet<String> wordSynonyms = instance.synonyms.getOrDefault(word, new HashSet<>());
         instance.synonyms.remove(word);
@@ -35,9 +39,7 @@ public class SynonymList {
         }
     }
 
-    public static synchronized HashSet<String> getSynonyms(String word) {
-        return _getSynonyms(word, new HashSet<>());
-    }
+    public static synchronized HashSet<String> getSynonyms(String word) { return _getSynonyms(word, new HashSet<>()); }
 
     private static synchronized HashSet<String> _getSynonyms(String word, HashSet<String> synonyms) {
         synonyms.add(word);

@@ -12,57 +12,83 @@ import java.io.IOException;
 public class SyntpClientGUI {
     private SyntpClient syntpClient;
     private JFrame mainFrame;
-    private JLabel ipLabel, portLabel, requestLabel, responseLabel, errorLabel;
+    private JLabel errorLabel;
     private JTextField ipTextField, portTextField;
     private JButton connectionButton, sendButton;
     private JTextArea requestTextArea, responseTextArea;
-    /*
-        IP address for server
-        Port number for server
-        connect / disconnect button
-        text area to type in text to be sent to server
-         text area to display result of the request.
-         */
 
     public SyntpClientGUI(SyntpClient sc) {
         syntpClient = sc;
 
         mainFrame = new JFrame("SYNTP Client");
         mainFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        mainFrame.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
 
+        /* Error Label */
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridwidth = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
         errorLabel = new JLabel("", SwingConstants.CENTER);
         errorLabel.setForeground(Color.red);
-        ipLabel = new JLabel("IP Address: ", SwingConstants.RIGHT);
-        portLabel = new JLabel("Port Number: ", SwingConstants.RIGHT);
+        errorLabel.setBackground(Color.CYAN);
+        mainFrame.add(errorLabel, gbc);
+
+        /* Connect Options */
+        gbc.gridy = 1;
+
         ipTextField = new JTextField(16);
         portTextField = new JTextField(16);
-
-        JPanel connectPanel = new JPanel();
-        connectPanel.setLayout(new FlowLayout());
-        connectPanel.add(ipLabel);
-        connectPanel.add(ipTextField);
-        connectPanel.add(portLabel);
-        connectPanel.add(portTextField);
         connectionButton = new JButton("Connect");
         connectionButton.addActionListener(new ConnectionButtonListener());
+
+        JPanel connectPanel = new JPanel();
+        connectPanel.setLayout(new GridLayout(1, 5));
+        connectPanel.add(new JLabel("IP Address: ", SwingConstants.RIGHT));
+        connectPanel.add(ipTextField);
+        connectPanel.add(new JLabel("Port Number: ", SwingConstants.RIGHT));
+        connectPanel.add(portTextField);
         connectPanel.add(connectionButton);
 
-        sendButton = new JButton("Send");
+        mainFrame.add(connectPanel, gbc);
+
+        /* Request button / Response label */
+        gbc.gridy = 2;
+        gbc.weightx = 0.5;
+        gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+
+        sendButton = new JButton("Send Request");
         sendButton.addActionListener(new SendButtonListener());
 
-        requestTextArea = new JTextArea();
-        responseTextArea = new JTextArea();
+        mainFrame.add(sendButton, gbc);
 
-        mainFrame.setLayout(new GridLayout(5, 1));
-        mainFrame.add(errorLabel);
-        mainFrame.add(connectPanel);
-        mainFrame.add(requestTextArea);
-        mainFrame.add(sendButton);
-        mainFrame.add(responseTextArea);
+        gbc.gridx = 1;
+        mainFrame.add(new JLabel("Response"), gbc);
+
+        /* Response / Request text areas */
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weighty = 1.0;
+        gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        requestTextArea = new JTextArea();
+        requestTextArea.setLineWrap(true);
+        requestTextArea.setPreferredSize(new Dimension(250, 200));
+        mainFrame.add(new JScrollPane(requestTextArea), gbc);
+
+        gbc.gridx = 1;
+        responseTextArea = new JTextArea();
+        responseTextArea.setLineWrap(true);
+        responseTextArea.setPreferredSize(new Dimension(250, 200));
+        mainFrame.add(new JScrollPane(responseTextArea), gbc);
+
         mainFrame.setSize(500, 500);
         mainFrame.setVisible(true);
 
-
+        new SpringLayout();
 
     }
 

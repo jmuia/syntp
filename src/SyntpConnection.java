@@ -11,9 +11,11 @@ final class SyntpConnection implements Runnable {
     final static String SET = "SET";
     final static String REMOVE = "REMOVE";
     Socket socket;
+    BufferedReader br;
+    DataOutputStream os;
 
     // Constructor
-    public SyntpConnection(Socket socket) throws Exception {
+    public SyntpConnection(Socket socket) {
         System.out.println("New connection");
         this.socket = socket;
     }
@@ -21,104 +23,165 @@ final class SyntpConnection implements Runnable {
     // Implement the run() method of the Runnable interface.
     public void run() {
         try {
-            handleConnection();
-        } catch (Exception e) {
+            // Get a reference to the socket's input and output streams.
+            InputStream is = socket.getInputStream();
+            os = new DataOutputStream(socket.getOutputStream());
+            // Set up input stream filters.
+            br = new BufferedReader(new InputStreamReader(is));
+
+            try {
+                socket.setSoTimeout(10000);
+                handleConnection();
+            } catch (SocketTimeoutException e) {
+                respond(408);
+            } finally {
+                // Close streams and sockets
+                System.out.println("Closing connection...");
+                os.close();
+                br.close();
+                socket.close();
+            }
+        } catch (IOException e) {
             System.out.println(e);
         }
     }
 
-    private Pair<String, SyntpVersion> parseRequestLine(String requestLine) throws Exception {
+    private void respond(int statusCode, String responseBody) throws IOException {
+        String responseLine = String.format("%s %s%s", MAX_VERSION, statusCode, CRLF);
+        os.writeBytes(responseLine + responseBody);
+    }
+
+    private void respond(int statusCode) throws IOException {
+        String responseLine = String.format("%s %s%s", MAX_VERSION, statusCode, CRLF);
+        os.writeBytes(responseLine);
+    }
+
+    private Pair<String, SyntpVersion> parseRequestLine(String requestLine) throws SyntpError {
         StringTokenizer tokens = new StringTokenizer(requestLine);
         if (tokens.countTokens() != 2) {
-            throw new Exception("Invalid requestLine: # tokens != 2");
+            throw new SyntpError(400, String.format("Invalid Request-Line: %s", requestLine));
         }
 
         String method = tokens.nextToken();
         if (!method.equals(GET) && !method.equals(SET) && !method.equals(REMOVE)) {
-            throw new Exception(String.format("Invalid method: %s", method));
+            throw new SyntpError(400, String.format("Invalid method: %s", method));
         }
 
-        SyntpVersion syntpVersion = new SyntpVersion(tokens.nextToken());
+        String syntpVersionToken = tokens.nextToken();
+        SyntpVersion syntpVersion;
+        try {
+            syntpVersion = new SyntpVersion(syntpVersionToken);
+        } catch (Exception e) {
+            throw new SyntpError(400, String.format("Invalid SYNTP-Version: %s", syntpVersionToken));
+        }
 
         return new Pair<>(method, syntpVersion);
     }
 
-    private void handleConnection() throws Exception {
-        // Get a reference to the socket's input and output streams.
-        InputStream is = socket.getInputStream();
-        DataOutputStream os = new DataOutputStream(socket.getOutputStream());
+    private String parseRequestBody(String method) throws SyntpError {
+        String requestBody = "";
+        try {
+            switch (method) {
+                case GET:
+                case REMOVE:
+                    requestBody += br.readLine() + CRLF;
+                    break;
+                case SET:
+                    requestBody += br.readLine() + CRLF;
+                    requestBody += br.readLine() + CRLF;
+                    break;
+            }
+        } catch (IOException e) {
+            throw new SyntpError(400, String.format("Request body was invalid for method %s", method));
+        }
+        return requestBody;
+    }
 
-        // Set up input stream filters.
-        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+    private void handleConnection() throws IOException {
 
         String requestLine = br.readLine();
         while (requestLine != null) {
-            System.out.println(requestLine);
             try {
                 // Get the request line of the SYNTP request message.
                 Pair<String, SyntpVersion> parsedRequestLine = parseRequestLine(requestLine);
+                String method = parsedRequestLine.x;
+                String requestBody = parseRequestBody(method);
+
                 SyntpVersion syntpVersion = parsedRequestLine.y;
                 if (syntpVersion.compareTo(MAX_VERSION) == 1 || syntpVersion.compareTo(MIN_VERSION) == -1) {
-                    throw new Exception(String.format("Server does not support SYNTP-Version: %s", syntpVersion));
+                    throw new SyntpError(505, String.format("Server does not support SYNTP-Version: %s", syntpVersion));
                 }
-                String method = parsedRequestLine.x;
 
                 switch (method) {
                     case GET:
-                        processGet(br, os);
+                        processGet(requestBody);
                         break;
                     case SET:
-                        processSet(br, os);
+                        processSet(requestBody);
                         break;
                     case REMOVE:
-                        processRemove(br, os);
+                        processRemove(requestBody);
                         break;
                 }
+
+            } catch (SyntpError syntpError) {
+                respond(syntpError.statusCode);
             } catch (Exception e) {
                 System.out.println(e);
+                respond(500);
             } finally {
                 requestLine = br.readLine();
             }
         }
-
-        System.out.println("Closing connection...");
-        // Close streams and sockets
-        os.close();
-        br.close();
-        socket.close();
     }
 
-    private void processGet(BufferedReader br, DataOutputStream os) throws Exception {
-        String word = br.readLine();
+    private void processGet(String requestBody) throws IOException, SyntpError {
+        StringTokenizer tokenizer = new StringTokenizer(requestBody, CRLF);
+        String word = tokenizer.nextToken();
+
         if (word.isEmpty()) {
-            throw new Exception("No word in get request");
+            throw new SyntpError(400, "No Request-Body provided in GET request.");
         }
+
+        if (!SynonymList.exists(word)) {
+            throw new SyntpError(404, String.format("The word %s does not exist on the server.", word));
+        }
+
         HashSet<String> synonyms = SynonymList.getSynonyms(word);
-        String response = MAX_VERSION + " 200" + CRLF;
+        String response = "";
         for (String s: synonyms) {
             response += s + CRLF;
         }
-        os.writeBytes(response + CRLF);
+        response += CRLF;
+        respond(200, response);
     }
 
-    private void processSet(BufferedReader br, DataOutputStream os) throws Exception {
-        String a = br.readLine();
-        String b = br.readLine();
+    private void processSet(String requestBody) throws IOException, SyntpError {
+        StringTokenizer tokenizer = new StringTokenizer(requestBody, CRLF);
+        String a = tokenizer.nextToken();
+        String b = tokenizer.nextToken();
+
         if (a.isEmpty() || b.isEmpty()) {
-            throw new Exception("Bad set request");
+            throw new SyntpError(400, "Bad SET request.");
         }
+
         SynonymList.addSynonym(a, b);
-        String response = MAX_VERSION + " 200" + CRLF;
-        os.writeBytes(response);
+        respond(200);
     }
 
-    private void processRemove(BufferedReader br, DataOutputStream os) throws Exception {
-        String word = br.readLine();
+    private void processRemove(String requestBody) throws IOException, SyntpError {
+        StringTokenizer tokenizer = new StringTokenizer(requestBody, CRLF);
+        String word = tokenizer.nextToken();
+
         if (word.isEmpty()) {
-            throw new Exception("No word in remove request");
+            throw new SyntpError(400, "No Request-Body provided in REMOVE request.");
         }
+
+        if (!SynonymList.exists(word)) {
+            throw new SyntpError(404, String.format("The word %s does not exist on the server.", word));
+        }
+
         SynonymList.removeSynonym(word);
-        String response = MAX_VERSION + " 200" + CRLF;
-        os.writeBytes(response);
+        respond(200);
     }
 }
