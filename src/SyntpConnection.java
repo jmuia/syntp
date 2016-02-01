@@ -1,6 +1,8 @@
-import java.io.* ;
-import java.net.* ;
-import java.util.* ;
+import java.io.*;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.HashSet;
+import java.util.StringTokenizer;
 
 
 final class SyntpConnection implements Runnable {

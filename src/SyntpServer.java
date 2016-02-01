@@ -1,5 +1,6 @@
 import java.io.IOException;
-import java.net.* ;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 public final class SyntpServer {
     public static void main(String argv[]) throws Exception {
