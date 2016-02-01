@@ -168,7 +168,7 @@ public class SyntpClientGUI {
         public void actionPerformed(ActionEvent e) {
             String request = requestTextArea.getText();
             if (syntpClient.connection == null || syntpClient.connection.isClosed()) {
-                errorLabel.setText("Need to connect to client first, ya shit");
+                errorLabel.setText("You are not connected to a SYNTP server.");
                 return;
             }
             syntpClient.makeRequest(request);
