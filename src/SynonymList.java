@@ -33,8 +33,12 @@ public class SynonymList {
 
         for (String s: wordSynonyms) {
             HashSet<String> sSynonyms = instance.synonyms.getOrDefault(s, new HashSet<>());
-            sSynonyms.remove(word);
-            instance.synonyms.put(s, sSynonyms);
+            if (sSynonyms.size() <= 1) {
+                instance.synonyms.remove(s);
+            } else {
+                sSynonyms.remove(word);
+                instance.synonyms.put(s, sSynonyms);
+            }
         }
     }
 
