@@ -32,7 +32,7 @@ final class SyntpConnection implements Runnable {
             br = new BufferedReader(new InputStreamReader(is));
 
             try {
-                socket.setSoTimeout(10000);
+                socket.setSoTimeout(2 * 60 * 1000); // 2 minutes
                 handleConnection();
             } catch (SocketTimeoutException e) {
                 respond(408);
