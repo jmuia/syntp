@@ -1,4 +1,3 @@
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -7,10 +6,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SynonymList {
     private static SynonymList instance = new SynonymList();
-    private HashMap<String, HashSet<String>> synonyms;
+    private ConcurrentHashMap<String, HashSet<String>> synonyms;
 
     private SynonymList() {
-        this.synonyms = new HashMap<>();
+        this.synonyms = new ConcurrentHashMap<>();
     }
 
     public static synchronized void addSynonym(String a, String b) {
