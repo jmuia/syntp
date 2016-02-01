@@ -76,13 +76,11 @@ public class SyntpClientGUI {
         gbc.fill = GridBagConstraints.BOTH;
         requestTextArea = new JTextArea();
         requestTextArea.setLineWrap(true);
-        requestTextArea.setPreferredSize(new Dimension(250, 200));
         mainFrame.add(new JScrollPane(requestTextArea), gbc);
 
         gbc.gridx = 1;
         responseTextArea = new JTextArea();
         responseTextArea.setLineWrap(true);
-        responseTextArea.setPreferredSize(new Dimension(250, 200));
         mainFrame.add(new JScrollPane(responseTextArea), gbc);
 
         mainFrame.setSize(500, 500);
@@ -98,10 +96,8 @@ public class SyntpClientGUI {
         @Override
         public void actionPerformed(ActionEvent event) {
             if (syntpClient.connection == null || syntpClient.connection.isClosed()) {
-                System.out.println("connect");
                 connect();
             } else {
-                System.out.println("disconnect");
                 disconnect();
             }
         }
@@ -121,12 +117,9 @@ public class SyntpClientGUI {
         try {
             syntpClient.connect(ipAddress, portNumber);
         } catch (Exception e) {
-            System.out.println("not connected ok :(");
             errorLabel.setText(e.toString());
             return;
         }
-
-        System.out.println("connected ok?");
 
         connectionButton.setText("Disconnect");
         Thread responseThread = new Thread(new Runnable() {
