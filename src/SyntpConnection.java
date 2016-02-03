@@ -3,6 +3,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.HashSet;
 import java.util.StringTokenizer;
+import java.util.NoSuchElementException;
 
 
 final class SyntpConnection implements Runnable {
@@ -139,6 +140,11 @@ final class SyntpConnection implements Runnable {
 
     private void processGet(String requestBody) throws IOException, SyntpError {
         StringTokenizer tokenizer = new StringTokenizer(requestBody, CRLF);
+
+        if (tokenizer.countTokens() < 1) {
+            throw new SyntpError(400, "No Request-Body provided in GET request.");
+        }
+
         String word = tokenizer.nextToken();
 
         if (word.isEmpty()) {
@@ -160,6 +166,11 @@ final class SyntpConnection implements Runnable {
 
     private void processSet(String requestBody) throws IOException, SyntpError {
         StringTokenizer tokenizer = new StringTokenizer(requestBody, CRLF);
+
+        if (tokenizer.countTokens() < 2) {
+            throw new SyntpError(400, "Bad SET request.");
+        }
+
         String a = tokenizer.nextToken();
         String b = tokenizer.nextToken();
 
@@ -173,6 +184,11 @@ final class SyntpConnection implements Runnable {
 
     private void processRemove(String requestBody) throws IOException, SyntpError {
         StringTokenizer tokenizer = new StringTokenizer(requestBody, CRLF);
+
+        if (tokenizer.countTokens() < 1) {
+            throw new SyntpError(400, "No Request-Body provided in REMOVE request.");
+        }
+
         String word = tokenizer.nextToken();
 
         if (word.isEmpty()) {

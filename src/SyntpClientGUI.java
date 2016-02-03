@@ -122,6 +122,8 @@ public class SyntpClientGUI {
         }
 
         connectionButton.setText("Disconnect");
+        errorLabel.setText("");
+
         Thread responseThread = new Thread(new Runnable() {
             @Override
             public void run() {
