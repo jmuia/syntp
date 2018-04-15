@@ -1,0 +1,6 @@
+Synonym Transfer Protocol -- SYNTP/1.0
+
+
+Abstract
+
+The Synonym Transfer Protocol (SYNTP) is an application-level protocol designed to enable the transfer of synonyms. It is a stateless, persistent protocol designed for a limited set of specific tasks.
